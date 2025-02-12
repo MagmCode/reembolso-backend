@@ -25,13 +25,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'django-insecure-0rk6!*35!gn!9d0h5q#_$e2!--83x+u2n=e_-_!sg_juqrz0un'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '180.183.66.248',  # Agrega esta línea
     'localhost',       # Para desarrollo local
     '127.0.0.1',    # Para desarrollo local
-    'https://reembolso-backend.onrender.com'   
+    'reembolso-backend.onrender.com'   
 ]
 
 
