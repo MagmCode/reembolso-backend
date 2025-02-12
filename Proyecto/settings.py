@@ -30,7 +30,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '180.183.66.248',  # Agrega esta línea
     'localhost',       # Para desarrollo local
-    '127.0.0.1',       # Para desarrollo local
+    '127.0.0.1',    # Para desarrollo local
+    'https://reembolso-backend.onrender.com'   
 ]
 
 
@@ -81,7 +82,8 @@ ROOT_URLCONF = 'Proyecto.urls'
 
 # Configura los orígenes permitidos
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4201",  # Origen de tu aplicación Angular
+    "http://localhost:4201", 
+    "https://proyecto-reembolsos.netlify.app/Login" # Origen de tu aplicación Angular
 ]
 
 # Opcional: Permitir credenciales (cookies, encabezados de autenticación, etc.)
