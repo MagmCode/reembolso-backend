@@ -1,0 +1,39 @@
+{% load static %}
+
+<div class="app-container">
+  
+  {% comment %} {% include 'header.html' %} {% endcomment %}
+
+  <main class="main-content">
+    <div class="content-wrapper">
+      <div class="info-section">
+        <h1 class="welcome-text">Bienvenido</h1>
+        <p class="description">
+          En RM Express, atender a nuestros <br />
+          clientes es nuestra prioridad.
+        </p>
+        <div class="request-section">
+          <h2 class="request-title">Haz tu solicitud</h2>
+          <div class="request-options">
+            <div class="option" onclick="reembolso()">
+              <p class="option-text">Reembolso</p>
+            </div>
+            <div class="option" onclick="cartaAval()">
+              <p class="option-text">Carta Aval</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-section">
+        {% comment %} <img
+          src="{% static 'imagen/logoEmpresa.png' %}"
+          alt="Logo"
+          class="main-logo"
+        /> {% endcomment %}
+      </div>
+    </div>
+  </main>
+
+  {% comment %} {% include 'footer.html' %} {% endcomment %}
+
+</div>

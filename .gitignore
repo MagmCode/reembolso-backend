@@ -1,0 +1,73 @@
+# Ignorar archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de configuración de IDEs
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Ignorar archivos de compilación
+/build/
+dist/
+out/
+*.o
+*.class
+*.exe
+*.dll
+
+# Ignorar archivos de dependencias
+/node_modules/
+vendor/
+*.egg-info/
+*.egg
+
+# Ignorar archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar archivos temporales
+*.tmp
+*.temp
+*.bak
+
+# Ignorar archivos de pruebas
+coverage/
+*.spec.py
+*.test.py
+
+# Ignorar archivos de documentación generada
+/docs/_build/
+
+# Ignorar archivos de Python
+__pycache__/
+*.py[cod]
+
+# Ignorar archivos de bases de datos
+*.sqlite3
+*.db
+
+# Ignorar archivos de migraciones
+*/migrations/*.py
+*/migrations/*.pyc
+!*/migrations/__init__.py
+
+# Ignorar archivos de configuración de Django
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.sqlite
+
+# Ignorar archivos de caché
+*.cache
+
+photos/

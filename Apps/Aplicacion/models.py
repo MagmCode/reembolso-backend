@@ -1,0 +1,291 @@
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.core.validators import MinValueValidator
+
+from .choices import tipo_parientes,roles,estatus
+# Create your models here.
+
+
+class Usuario(AbstractUser):
+    username = models.IntegerField(
+		'Cedula',
+        validators=[MinValueValidator(1)],
+		primary_key=True
+	)
+    # first_name = models.CharField(
+    #     'Nombres',
+	# 	max_length=255,
+	# 	blank=True,
+	# 	null=True
+	# )
+    # last_name = models.CharField(
+    #     'Apellidos',
+	# 	max_length=255,
+	# 	blank=True,
+	# 	null=True
+	# )
+    fecha_nacimiento = models.DateField(
+        'Fecha de nacimiento',
+        blank=False,
+        null=False
+    )
+    REQUIRED_FIELDS = [
+        "email",
+        "first_name",
+        "last_name",
+        "fecha_nacimiento"
+        ]
+
+    def __str__(self):
+        return f'{self.first_name} {self.last_name}'
+
+class Aseguradora(models.Model):
+    nombre = models.CharField(
+        'Nombre de la aseguradora',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    nro_poliza = models.IntegerField(
+        'Numero de polizas',
+        validators=[MinValueValidator(1)],
+        blank=False,
+        null=False
+    )
+
+    def __str__(self):
+        return f'{self.nombre}'
+
+class Titular(models.Model):
+    username = models.OneToOneField(
+        Usuario,
+        on_delete = models.CASCADE
+    )
+    aseguradora = models.ForeignKey(
+        Aseguradora,
+        on_delete=models.PROTECT
+    )
+    telefono = models.IntegerField(
+        'Telefono',
+        blank=False,
+        null=False
+    )
+    telefono_opcional = models.IntegerField(
+        'Telefono opcional',
+        blank=True,
+        null=True
+    )
+    correo = models.CharField(
+        'correo electronico',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    vigencia_desde = models.DateField(
+        'Vigencia desde',
+        blank=False,
+        null=False
+    )
+    vigencia_hasta = models.DateField(
+        'vigencia hasta',
+        blank=False,
+        null=False
+    )
+
+    def __str__(self):
+        return f'{self.username}'
+
+class Familiar(models.Model):
+    username = models.OneToOneField(
+        Usuario,
+        on_delete = models.CASCADE
+    )
+    titular = models.ForeignKey(
+        Titular,
+         on_delete=models.PROTECT
+    )
+    tipo_parientes = models.CharField(
+        'Familiar',
+        max_length=1,
+        choices=tipo_parientes,
+        default='P'
+    )
+    
+    def __str__(self):
+        return f'{self.username}'
+
+class Administrador(models.Model):
+    username = models.OneToOneField(
+        Usuario,
+        on_delete = models.CASCADE
+    ) 
+    rol = models.CharField(
+        'Cargo',
+		max_length=1,
+        choices=roles,
+        default='G'
+	)
+
+    def __str__(self):
+        return f'{self.username}'
+
+class Reembolso(models.Model):
+    aseguradora = models.ForeignKey(
+        Aseguradora,
+        on_delete=models.PROTECT
+    )
+    username = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT)
+    id = models.IntegerField(
+        'Numero de factura',
+        primary_key=True
+    )
+    diagnostico = models.CharField(
+        'Diagnostico',
+        max_length=255,
+        blank=False,
+        null=False,
+        )
+    fecha_siniestro = models.DateField(
+        'fecha de siniestro',
+        blank=False,
+        null=False
+    )
+    fecha_factura = models.DateField(
+        'Fecha de factura',
+        blank=False,
+        null=False
+    )
+    concepto = models.CharField(
+        'Concepto',
+        max_length=255,
+        blank=False,
+        null=False
+        )
+    paciente = models.CharField(
+        'Paciente',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    monto = models.DecimalField(
+        'Costo',
+        max_digits=10,
+        decimal_places=2,
+        blank=False,
+        null=False
+    )
+    informe_ampliado = models.ImageField(upload_to='photos/reembolso/')
+    informe_resultado = models.ImageField(upload_to='photos/reembolso/')
+    
+    def __str__(self):
+        return f'{self.id}'
+
+
+class CartaAval(models.Model):
+    aseguradora = models.ForeignKey(
+        Aseguradora,
+        on_delete=models.PROTECT
+    )
+    username = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT
+    )
+    id = models.IntegerField(
+        'Numero de presupuesto',
+        primary_key=True
+    )
+    fecha_siniestro = models.DateField(
+        'Fecha de siniestro',
+        blank=False,
+        null=False
+    )
+    fecha_registro = models.DateField(
+        'Fecha de registro',
+        blank=False,
+        null=False
+    )
+    diagnostico = models.CharField(
+        'Diagnostico',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    procedimiento = models.CharField(
+        'Procedimiento',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    clinica = models.CharField(
+        'Clinica',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    monto = models.DecimalField(
+        'Costo',
+        max_digits=10,
+        decimal_places=2,
+        blank=False,
+        null=False
+    )
+    paciente = models.CharField(
+        'Paciente',
+        max_length=255,
+        blank=False,
+        null=False
+    )
+    informe_resultado = models.ImageField(upload_to='photos/cartaval/')
+    informe_ampliado = models.ImageField(upload_to='photos/cartaval/')
+    
+    def __str__(self):
+        return f'{self.id}'
+
+class SolicitudReembolso(models.Model):
+    administrador = models.ForeignKey(
+        Administrador,
+        on_delete=models.PROTECT
+    )
+    reembolso = models.ForeignKey(
+        Reembolso,
+        on_delete=models.PROTECT
+    )
+    id = models.IntegerField(
+        'Numero de siniestro',
+        primary_key=True
+    )
+    estatus = models.CharField(
+        'Estatus',
+        max_length=1,
+        choices=estatus,
+        default='P'
+    )
+
+    def __str__(self):
+        return f'{self.id}'
+
+
+class SolicitudCartaAval(models.Model):
+    administrador = models.ForeignKey(
+        Administrador,
+        on_delete=models.PROTECT
+    )
+    carta_aval = models.ForeignKey(
+        CartaAval,
+        on_delete=models.PROTECT
+    )
+    id = models.IntegerField(
+        'Numero de siniestro',
+        primary_key=True
+    )
+    estatus = models.CharField(
+        'Estatus',
+        max_length=1,
+        choices=estatus,
+        default='P'
+    )
+
+    def __str__(self):
+        return f'{self.id}'
