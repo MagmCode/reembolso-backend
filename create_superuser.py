@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proyecto.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Proyecto.settings')
 django.setup()
 
 from  Apps.Aplicacion.models import Usuario
