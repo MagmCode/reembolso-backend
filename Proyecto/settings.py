@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Apps',
+    'Apps.Aplicacion',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -113,8 +113,9 @@ WSGI_APPLICATION = 'Proyecto.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+
         # 'ENGINE': 'django.db.backends.mysql',
         # 'NAME': 'reembolsos_db',
         # 'USER': 'root',
@@ -167,4 +168,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'Apps.Usuario'
+AUTH_USER_MODEL = 'Aplicacion.Usuario'
