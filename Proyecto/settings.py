@@ -114,7 +114,13 @@ WSGI_APPLICATION = 'Proyecto.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),  # Usa os.path.join
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+        # 'ENGINE': 'django.db.backends.mysql',
+        # 'NAME': 'reembolsos_db',
+        # 'USER': 'root',
+        # 'PASSWORD': '',
+        # 'HOST': 'localhost',  # O la IP del servidor de la base de datos
+        # 'PORT': '3306',  
     }
 }
 
