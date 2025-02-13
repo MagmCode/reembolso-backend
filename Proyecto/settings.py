@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Apps.Aplicacion',
+    'Apps',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -167,4 +167,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'Aplicacion.Usuario'
+AUTH_USER_MODEL = 'Apps.Usuario'

@@ -17,7 +17,7 @@ from django.contrib.auth import get_user_model
 Usuario = get_user_model()
 
 def homeTitular(request): 
-    homeTitularTemplate = open("./Apps/Aplicacion/templates/user/titular/home.html")
+    homeTitularTemplate = open("./Apps/templates/user/titular/home.html")
     template = Template(homeTitularTemplate.read())
     homeTitularTemplate.close()
     contexto = Context()
