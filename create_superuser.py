@@ -4,7 +4,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proyecto.settings')
 django.setup()
 
-from  Apps.models import Usuario
+from  Apps.Aplicacion.models import Usuario
 
 # Verifica si el usuario ya existe
 if not Usuario.objects.filter(cedula='1234567890').exists():
