@@ -82,8 +82,8 @@ ROOT_URLCONF = 'Proyecto.urls'
 
 # Configura los orígenes permitidos
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4201", 
-    "https://proyecto-reembolsos.netlify.app/Login" # Origen de tu aplicación Angular
+    'https://proyecto-reembolsos.netlify.app',
+    'http://localhost:4201',  # Añade otros dominios si es necesario
 ]
 
 # Opcional: Permitir credenciales (cookies, encabezados de autenticación, etc.)
