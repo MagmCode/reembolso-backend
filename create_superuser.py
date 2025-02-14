@@ -11,7 +11,7 @@ from Apps.Aplicacion.models import Usuario
 if not Usuario.objects.filter(username='123456').exists():
     # Crea un usuario con el campo 'username' (que almacena la cédula)
     user = Usuario.objects.create_user(
-        username='123465',  # Usar 'username' en lugar de 'cedula'
+        username='123456',  # Usar 'username' en lugar de 'cedula'
         password='Admin25',  # Contraseña del usuario
         email='admin@example.com',  # Correo electrónico (requerido por REQUIRED_FIELDS)
         first_name='Admin',  # Nombre (requerido por REQUIRED_FIELDS)
