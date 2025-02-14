@@ -1,16 +1,25 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.core.validators import MinValueValidator
-
+# from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from .choices import tipo_parientes,roles,estatus
 # Create your models here.
 
 
 class Usuario(AbstractUser):
-    username = models.IntegerField(
+    username = models.CharField(
 		'Cedula',
-        validators=[MinValueValidator(1)],
-		primary_key=True
+        # validators=[MinValueValidator(1)],
+		max_length=20,
+        unique=True,
+        primary_key=True,
+        validators=[
+            RegexValidator(
+                regex='^\d+$',
+                message='La cédula debe contener solo números',
+                code='invalid_username'
+            )
+        ]
 	)
     # first_name = models.CharField(
     #     'Nombres',
