@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,9 +113,11 @@ WSGI_APPLICATION = 'Proyecto.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+    'default': 
+    dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'))
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
 
         # 'ENGINE': 'django.db.backends.mysql',
         # 'NAME': 'reembolsos_db',
@@ -122,7 +125,7 @@ DATABASES = {
         # 'PASSWORD': '',
         # 'HOST': 'localhost',  # O la IP del servidor de la base de datos
         # 'PORT': '3306',  
-    }
+    # }
 }
 
 
