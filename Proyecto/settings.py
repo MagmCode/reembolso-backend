@@ -80,6 +80,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'Proyecto.urls'
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Backend predeterminado
+]
+
 
 # Configura los orígenes permitidos
 CORS_ALLOWED_ORIGINS = [

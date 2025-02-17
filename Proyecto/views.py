@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 
 # Create your views here.
 
-#Variables
+# Variables
 
 Usuario = get_user_model()
 
@@ -29,7 +29,7 @@ class LoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        #Verificar si el usuario existe
+        # Verificar si el usuario existe
         try:
             user = Usuario.objects.get(username=username)
         except Usuario.DoesNotExist:
@@ -42,6 +42,10 @@ class LoginView(APIView):
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
+                'is_admin': user.is_staff or user.is_superuser,  # Enviar si es admin
+                'username': user.username,  # Enviar el nombre de usuario
+                'first_name': user.first_name,  # Enviar el nombre
+                'last_name': user.last_name,  # Enviar el apellido
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Contraseña inválida'}, status=status.HTTP_401_UNAUTHORIZED)
