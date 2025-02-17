@@ -21,18 +21,18 @@ class Usuario(AbstractUser):
             )
         ]
 	)
-    # first_name = models.CharField(
-    #     'Nombres',
-	# 	max_length=255,
-	# 	blank=True,
-	# 	null=True
-	# )
-    # last_name = models.CharField(
-    #     'Apellidos',
-	# 	max_length=255,
-	# 	blank=True,
-	# 	null=True
-	# )
+    first_name = models.CharField(
+        'Nombres',
+		max_length=255,
+		blank=True,
+		null=True
+	)
+    last_name = models.CharField(
+        'Apellidos',
+		max_length=255,
+		blank=True,
+		null=True
+	)
     fecha_nacimiento = models.DateField(
         'Fecha de nacimiento',
         blank=False,
