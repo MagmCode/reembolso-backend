@@ -46,8 +46,7 @@ for usuario_data in USERS:
             email=usuario_data['email'],
             first_name=usuario_data['first_name'],
             last_name=usuario_data['last_name'],
-            fecha_nacimiento=['fecha_nacimiento'],
-            is_staff=False,
+            fecha_nacimiento=usuario_data['fecha_nacimiento'],            is_staff=False,
             is_superuser=False,
         )
         usuario.save()
