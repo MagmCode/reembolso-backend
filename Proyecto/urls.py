@@ -17,10 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Proyecto.views import homeTitular
-from .views import LoginView
+from .views import LoginView, logout_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('home/', homeTitular),
     path('api/login/', LoginView.as_view(), name='login'),
+    path('api/logout/', logout_view, name='logout'),
 ]

@@ -8,6 +8,9 @@ from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.contrib.auth import logout
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 
 # Create your views here.
@@ -49,3 +52,8 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Contraseña inválida'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+@csrf_exempt
+def logout_view(request):
+    logout(request)
+    return JsonResponse({'message': 'Logged out successfully'}, status=200)
