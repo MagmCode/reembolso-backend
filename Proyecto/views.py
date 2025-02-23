@@ -46,6 +46,7 @@ class LoginView(APIView):
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
                 'is_admin': user.is_staff or user.is_superuser,  # Enviar si es admin
+                'rol': user.rol,  # Enviar el rol del usuario
                 'username': user.username,  # Enviar el nombre de usuario
                 'first_name': user.first_name,  # Enviar el nombre
                 'last_name': user.last_name,  # Enviar el apellido

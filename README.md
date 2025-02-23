@@ -23,7 +23,7 @@ Cada vez que se vaya a trabajar en el proyecto, se debe activar el entorno virtu
   
 
 ```bash
-~ # En Windows CMD
+venv\Scripts\activate.bat  # En Windows CMD
 
 venv\Scripts\Activate.ps1 # En Windows PowerShell
 

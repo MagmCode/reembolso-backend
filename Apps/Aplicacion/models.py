@@ -7,10 +7,15 @@ from .choices import tipo_parientes,roles,estatus
 
 
 class Usuario(AbstractUser):
+    ROLES = (
+        ('admin', 'Administrador'),
+        ('analista', 'Analista'),
+        ('cliente', 'Cliente'),
+    )
+
     username = models.CharField(
-		'Cedula',
-        # validators=[MinValueValidator(1)],
-		max_length=20,
+        'Cédula',
+        max_length=20,
         unique=True,
         primary_key=True,
         validators=[
@@ -20,30 +25,43 @@ class Usuario(AbstractUser):
                 code='invalid_username'
             )
         ]
-	)
+    )
     first_name = models.CharField(
         'Nombres',
-		max_length=255,
-		blank=True,
-		null=True
-	)
-    last_name = models.CharField(
-        'Apellidos',
-		max_length=255,
-		blank=True,
-		null=True
-	)
-    fecha_nacimiento = models.DateField(
-        'Fecha de nacimiento',
-        blank=False,
+        max_length=255,
+        blank=False,  # Hacer obligatorio
         null=False
     )
+    last_name = models.CharField(
+        'Apellidos',
+        max_length=255,
+        blank=False,  # Hacer obligatorio
+        null=False
+    )
+    email = models.EmailField(
+        'Correo electrónico',
+        unique=True,  # Asegurar que el email sea único
+        blank=False,  # Hacer obligatorio
+        null=False
+    )
+    fecha_nacimiento = models.DateField(
+        'Fecha de nacimiento',
+        blank=False,  # Hacer obligatorio
+        null=False
+    )
+    rol = models.CharField(
+        'Rol',
+        max_length=20,
+        choices=ROLES,
+        default='cliente'  # Rol por defecto
+    )
+
     REQUIRED_FIELDS = [
         "email",
         "first_name",
         "last_name",
         "fecha_nacimiento"
-        ]
+    ]
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
