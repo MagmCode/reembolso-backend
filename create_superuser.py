@@ -1,11 +1,12 @@
 import os
 import django
+from django.contrib.auth import get_user_model
 
 # Configura el entorno de Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Proyecto.settings')
 django.setup()
 
-from django.contrib.auth import get_user_model
+
 Usuario = get_user_model()
 
 # Verifica si el usuario ya existe
@@ -23,7 +24,7 @@ if not Usuario.objects.filter(username='123456').exists():
     admin.is_staff = True  # Hacer que el usuario sea parte del staff
     admin.is_superuser = True  # Hacer que el usuario sea un superusuario
     admin.save()
-    print("Usuario creado exitosamente.")
+    print("Usuario Admin creado exitosamente.")
 else:
     print("El usuario ya existe.")
 
@@ -62,6 +63,6 @@ for usuario_data in USERS:
             is_superuser=(usuario_data['rol'] == 'admin'),  # Solo el admin es superusuario
         )
         usuario.save()
-        print(f"Usuario {usuario.username} creado exitosamente.")
+        print(f"Usuario {usuario.username}, {usuario.first_name} creado exitosamente.")
     else:
         print(f"El usuario {usuario_data['username']} ya existe.")
