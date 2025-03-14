@@ -27,6 +27,7 @@ vendor/
 .env
 .env.local
 .env.*.local
+venv/
 
 # Ignorar archivos de logs
 *.log
