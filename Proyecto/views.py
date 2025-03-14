@@ -19,22 +19,17 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
 from django.contrib.staticfiles import finders
 from reportlab.lib.enums import TA_CENTER
+from django.contrib.auth.models import User
+from Apps.Aplicacion.models import Usuario, Aseguradora, Titular
+import json
+from django.core.exceptions import ValidationError
 
 
-# Create your views here.
-
-# Variables
+# VARIABLES GLOBALES
 
 Usuario = get_user_model()
 
-def homeTitular(request): 
-    homeTitularTemplate = open("./Apps/templates/user/titular/home.html")
-    template = Template(homeTitularTemplate.read())
-    homeTitularTemplate.close()
-    contexto = Context()
-    documento = template.render(contexto)
-    return HttpResponse(documento)
-
+# AUTENTICACIÓN
 class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
@@ -67,7 +62,9 @@ def logout_view(request):
     logout(request)
     return JsonResponse({'message': 'Logged out successfully'}, status=200)
 
-# Resportes
+
+# REPORTES PDF
+# Reporte de reembolsos semanal
 
 def reporte_reembolsos_semanal_pdf(request):
     response = HttpResponse(content_type='application/pdf')
@@ -152,7 +149,7 @@ def reporte_reembolsos_semanal_pdf(request):
     
     return response
 
-
+# Reporte de reembolsos mensual
 
 def reporte_reembolsos_mensual_pdf(request):
     response = HttpResponse(content_type='application/pdf')
@@ -237,3 +234,52 @@ def reporte_reembolsos_mensual_pdf(request):
     p.save()
     
     return response
+
+# REGISTRO DE USUARIOS
+
+@csrf_exempt
+def register_user(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar que la cédula no exista
+            if Usuario.objects.filter(username=data['cedula']).exists():
+                return JsonResponse({'status': 'error', 'message': 'La cédula ya está registrada'}, status=400)
+            
+            # Crear el usuario
+            user = Usuario.objects.create_user(
+                username=data['cedula'],  # Cédula
+                password=data['clave'],  # Contraseña
+                first_name=data['nombre'],  # Nombre
+                last_name=data['apellido'],  # Apellido
+                email=data['correo'],  # Correo
+                fecha_nacimiento=data['fechaNacimiento'],  # Fecha de nacimiento
+                rol='cliente'  # Rol por defecto para nuevos usuarios
+            )
+            
+            # Crear la aseguradora
+            aseguradora = Aseguradora.objects.create(
+                nombre=data['aseguradora'],
+                nro_poliza=data['nroPoliza']
+            )
+            
+            # Crear el titular
+            titular = Titular.objects.create(
+                username=user,
+                aseguradora=aseguradora,
+                telefono=data['telefono'],
+                telefono_opcional=data.get('telefonoOpcional', None),
+                correo=data['correo'],
+                vigencia_desde=data['vigenteDesde'],
+                vigencia_hasta=data['vigenteHasta']
+            )
+            
+            return JsonResponse({'status': 'success', 'message': 'Usuario registrado correctamente'})
+        
+        except ValidationError as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': 'Error en el servidor'}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
