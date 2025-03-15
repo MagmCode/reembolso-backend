@@ -24,6 +24,10 @@ from Apps.Aplicacion.models import Usuario, Aseguradora, Titular
 import json
 from django.core.exceptions import ValidationError
 
+from Apps.Aplicacion.serializers import AseguradoraSerializer
+from rest_framework import generics
+from Apps.Aplicacion.models import Aseguradora
+
 
 # VARIABLES GLOBALES
 
@@ -244,18 +248,29 @@ def register_user(request):
             data = json.loads(request.body)
             
             # Validar que la cédula no exista
-            if Usuario.objects.filter(username=data['cedula']).exists():
+            if Usuario.objects.filter(username=data.get('cedula')).exists():
                 return JsonResponse({'status': 'error', 'message': 'La cédula ya está registrada'}, status=400)
             
-            # Crear el usuario
+            # Validar campos requeridos
+            required_fields = [
+                'cedula', 'clave', 'nombre', 'apellido', 'correo',
+                'fechaNacimiento', 'aseguradora', 'nroPoliza', 'telefono',
+                'vigenteDesde', 'vigenteHasta'
+            ]
+            for field in required_fields:
+                if field not in data:
+                    return JsonResponse({'status': 'error', 'message': f'Falta el campo requerido: {field}'}, status=400)
+            
+            # Crear el usuario (solo el número de cédula en username)
             user = Usuario.objects.create_user(
-                username=data['cedula'],  # Cédula
+                username=data['cedula'],  # Solo el número de cédula
                 password=data['clave'],  # Contraseña
                 first_name=data['nombre'],  # Nombre
                 last_name=data['apellido'],  # Apellido
                 email=data['correo'],  # Correo
                 fecha_nacimiento=data['fechaNacimiento'],  # Fecha de nacimiento
-                rol='cliente'  # Rol por defecto para nuevos usuarios
+                rol='cliente',  # Rol por defecto para nuevos usuarios
+                tipo_cedula=data['tipoCedula']  # Guardar el tipo de cédula (V o E)
             )
             
             # Crear la aseguradora
@@ -264,12 +279,19 @@ def register_user(request):
                 nro_poliza=data['nroPoliza']
             )
             
+            # Manejar telefonoOpcional
+            telefono_opcional = data.get('telefonoOpcional')
+            if telefono_opcional == '' or telefono_opcional is None:
+                telefono_opcional = None  # Enviar como null si está vacío o es null
+            else:
+                telefono_opcional = int(telefono_opcional)  # Convertir a número si tiene valor
+            
             # Crear el titular
             titular = Titular.objects.create(
                 username=user,
                 aseguradora=aseguradora,
                 telefono=data['telefono'],
-                telefono_opcional=data.get('telefonoOpcional', None),
+                telefono_opcional=telefono_opcional,  # Puede ser null
                 correo=data['correo'],
                 vigencia_desde=data['vigenteDesde'],
                 vigencia_hasta=data['vigenteHasta']
@@ -280,6 +302,13 @@ def register_user(request):
         except ValidationError as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'Error en el servidor'}, status=500)
+            return JsonResponse({'status': 'error', 'message': f'Error en el servidor: {str(e)}'}, status=500)
     
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+# LISTA DE ASEGURADORAS
+
+class AseguradoraList(generics.ListAPIView):
+    queryset = Aseguradora.objects.all()
+    serializer_class = AseguradoraSerializer

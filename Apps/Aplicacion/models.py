@@ -55,6 +55,12 @@ class Usuario(AbstractUser):
         choices=ROLES,
         default='cliente'  # Rol por defecto
     )
+    tipo_cedula = models.CharField(
+        'Tipo de cédula',
+        max_length=1,
+        choices=[('V', 'Venezolano'), ('E', 'Extranjero')],
+        default='V'
+    )
 
     REQUIRED_FIELDS = [
         "email",
