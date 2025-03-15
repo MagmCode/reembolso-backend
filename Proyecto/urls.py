@@ -3,7 +3,7 @@ from django import views
 from django.contrib import admin
 from django.urls import path
 # from Proyecto.views import homeTitular
-from .views import LoginView, logout_view, reporte_reembolsos_mensual_pdf, reporte_reembolsos_semanal_pdf, register_user, AseguradoraList, validate_cedula_email, update_password
+from .views import LoginView, ReembolsoListCreateView, logout_view, reporte_reembolsos_mensual_pdf, reporte_reembolsos_semanal_pdf, register_user, AseguradoraList, validate_cedula_email, update_password, UserProfileView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -19,6 +19,8 @@ urlpatterns = [
     path('api/aseguradoras/', AseguradoraList.as_view(), name='aseguradora-list'),
     path('api/validate-cedula-email/', validate_cedula_email, name='validate_cedula_email'),
     path('api/update-password/', update_password, name='update_password'),
+    path('api/user-profile/', UserProfileView.as_view(), name='user-profile'),
+     path('api/reembolsos/', ReembolsoListCreateView.as_view(), name='reembolso-list-create'),
 ]
 
 if settings.DEBUG:

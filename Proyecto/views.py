@@ -19,13 +19,13 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
 from django.contrib.staticfiles import finders
 from reportlab.lib.enums import TA_CENTER
-from Apps.Aplicacion.models import Usuario, Aseguradora, Titular
+from Apps.Aplicacion.models import Usuario, Aseguradora, Titular, Reembolso
 import json
 from django.core.exceptions import ValidationError
 
-from Apps.Aplicacion.serializers import AseguradoraSerializer
+from Apps.Aplicacion.serializers import AseguradoraSerializer, ReembolsoSerializer
 from rest_framework import generics
-from Apps.Aplicacion.models import Aseguradora
+from rest_framework.permissions import IsAuthenticated
 
 
 # VARIABLES GLOBALES
@@ -48,6 +48,18 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)
+
+            # Obtener los datos adicionales del usuario
+            try:
+                titular = Titular.objects.get(username=user)
+                telefono = titular.telefono
+                aseguradora = titular.aseguradora.nombre
+                nroPoliza = titular.aseguradora.nro_poliza  # Acceder a nro_poliza a través de la relación aseguradora
+            except Titular.DoesNotExist:
+                telefono = None
+                aseguradora = None
+                nroPoliza = None
+
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
@@ -56,6 +68,10 @@ class LoginView(APIView):
                 'username': user.username,  # Enviar el nombre de usuario
                 'first_name': user.first_name,  # Enviar el nombre
                 'last_name': user.last_name,  # Enviar el apellido
+                'tipo_cedula': user.tipo_cedula,  # Enviar el tipo de cédula
+                'telefono': telefono,  # Enviar el teléfono
+                'aseguradora': aseguradora,  # Enviar la aseguradora
+                'nroPoliza': nroPoliza  # Enviar el número de póliza
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Contraseña inválida'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -351,17 +367,29 @@ def update_password(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            username = data.get('cedula')  # Cambiar 'cedula' por 'username'
+            username = data.get('cedula')  # Mantener 'cedula' como clave
+            current_password = data.get('currentPassword')  # Nuevo campo para cambio normal
             new_password = data.get('newPassword')
 
             if not username or not new_password:
                 return JsonResponse({'success': False, 'error': 'Cédula y nueva contraseña son requeridos'}, status=400)
 
             # Verificar si el usuario existe
-            user = Usuario.objects.get(username=username)  # Buscar por 'username'
+            user = Usuario.objects.get(username=username)
+
+            # Si se proporciona la contraseña actual, validarla (para cambio normal)
+            if current_password:
+                if not user.check_password(current_password):
+                    return JsonResponse({'success': False, 'error': 'Contraseña actual incorrecta'}, status=400)
+
+            # Validar que la nueva contraseña no sea igual a la actual
+            if user.check_password(new_password):
+                return JsonResponse({'success': False, 'error': 'La nueva contraseña no puede ser igual a la actual'}, status=400)
+
+            # Actualizar la contraseña
             user.set_password(new_password)
             user.save()
-            return JsonResponse({'success': True})
+            return JsonResponse({'success': True, 'message': 'Contraseña actualizada correctamente'})
         except Usuario.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=400)
         except Exception as e:
@@ -370,3 +398,53 @@ def update_password(request):
     else:
         # Si el método no es POST, devolver un error 405 (Método no permitido)
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    
+    # EDITT PROFILE
+    
+class UserProfileView(APIView):
+    def get(self, request):
+        user = request.user
+        try:
+            titular = Titular.objects.get(username=user)
+            data = {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'telefono': titular.telefono,
+                'telefono_opcional': titular.telefono_opcional,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except Titular.DoesNotExist:
+            return Response({'error': 'Titular no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request):
+        user = request.user
+        try:
+            titular = Titular.objects.get(username=user)
+            user.first_name = request.data.get('first_name', user.first_name)
+            user.last_name = request.data.get('last_name', user.last_name)
+            user.email = request.data.get('email', user.email)
+            user.save()
+
+            titular.telefono = request.data.get('telefono', titular.telefono)
+            titular.telefono_opcional = request.data.get('telefono_opcional', titular.telefono_opcional)
+            titular.save()
+
+            return Response({'message': 'Perfil actualizado correctamente'}, status=status.HTTP_200_OK)
+        except Titular.DoesNotExist:
+            return Response({'error': 'Titular no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+# REEMBOLSO CLIENTE
+
+class ReembolsoListCreateView(generics.ListCreateAPIView):
+    serializer_class = ReembolsoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filtrar los reembolsos por el usuario actual
+        return Reembolso.objects.filter(username=self.request.user)
+
+    def perform_create(self, serializer):
+        # Asignar el usuario actual al reembolso creado
+        serializer.save(username=self.request.user)

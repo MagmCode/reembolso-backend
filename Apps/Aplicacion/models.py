@@ -169,7 +169,8 @@ class Reembolso(models.Model):
     )
     username = models.ForeignKey(
         Usuario,
-        on_delete=models.PROTECT)
+        on_delete=models.PROTECT
+    )
     id = models.IntegerField(
         'Numero de factura',
         primary_key=True
@@ -177,13 +178,13 @@ class Reembolso(models.Model):
     diagnostico = models.CharField(
         'Diagnostico',
         max_length=255,
-        blank=False,
-        null=False,
-        )
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
+    )
     fecha_siniestro = models.DateField(
         'fecha de siniestro',
-        blank=False,
-        null=False
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
     )
     fecha_factura = models.DateField(
         'Fecha de factura',
@@ -195,12 +196,12 @@ class Reembolso(models.Model):
         max_length=255,
         blank=False,
         null=False
-        )
+    )
     paciente = models.CharField(
         'Paciente',
         max_length=255,
-        blank=False,
-        null=False
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
     )
     monto = models.DecimalField(
         'Costo',
@@ -209,11 +210,13 @@ class Reembolso(models.Model):
         blank=False,
         null=False
     )
-    informe_ampliado = models.ImageField(upload_to='photos/reembolso/')
-    informe_resultado = models.ImageField(upload_to='photos/reembolso/')
+    cedula_paciente = models.FileField(upload_to='pdfs/reembolso/')  # Cambia ImageField a FileField
+    informe_ampliado = models.FileField(upload_to='pdfs/reembolso/')
+    informe_resultado = models.FileField(upload_to='pdfs/reembolso/')
     
     def __str__(self):
         return f'{self.id}'
+
 
 
 class CartaAval(models.Model):
