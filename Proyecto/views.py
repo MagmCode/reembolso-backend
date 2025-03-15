@@ -19,7 +19,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
 from django.contrib.staticfiles import finders
 from reportlab.lib.enums import TA_CENTER
-from django.contrib.auth.models import User
 from Apps.Aplicacion.models import Usuario, Aseguradora, Titular
 import json
 from django.core.exceptions import ValidationError
@@ -312,3 +311,62 @@ def register_user(request):
 class AseguradoraList(generics.ListAPIView):
     queryset = Aseguradora.objects.all()
     serializer_class = AseguradoraSerializer
+    
+
+# FORGOT PASSWORD
+
+@csrf_exempt
+def validate_cedula_email(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('cedula')  # Cambiar 'cedula' por 'username'
+            email = data.get('email')
+
+            if not username or not email:
+                return JsonResponse({'valid': False, 'error': 'Cédula y email son requeridos'}, status=400)
+
+            # Verificar si el usuario existe
+            user = Usuario.objects.get(username=username)
+            
+            # Verificar si el correo coincide
+            if user.email != email:
+                return JsonResponse({'valid': False, 'error': 'Correo incorrecto'}, status=400)
+            
+            return JsonResponse({'valid': True})
+        except Usuario.DoesNotExist:
+            return JsonResponse({'valid': False, 'error': 'Usuario no registrado'}, status=400)
+        except Exception as e:
+            # Capturar cualquier otra excepción
+            return JsonResponse({'valid': False, 'error': str(e)}, status=500)
+    else:
+        # Si el método no es POST, devolver un error 405 (Método no permitido)
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        
+        
+# UPDATE PASSWORD
+
+@csrf_exempt
+def update_password(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('cedula')  # Cambiar 'cedula' por 'username'
+            new_password = data.get('newPassword')
+
+            if not username or not new_password:
+                return JsonResponse({'success': False, 'error': 'Cédula y nueva contraseña son requeridos'}, status=400)
+
+            # Verificar si el usuario existe
+            user = Usuario.objects.get(username=username)  # Buscar por 'username'
+            user.set_password(new_password)
+            user.save()
+            return JsonResponse({'success': True})
+        except Usuario.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=400)
+        except Exception as e:
+            # Capturar cualquier otra excepción
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    else:
+        # Si el método no es POST, devolver un error 405 (Método no permitido)
+        return JsonResponse({'error': 'Método no permitido'}, status=405)

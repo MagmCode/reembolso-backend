@@ -1,24 +1,9 @@
-"""
-URL configuration for Proyecto project.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django import views
 from django.contrib import admin
 from django.urls import path
 # from Proyecto.views import homeTitular
-from .views import LoginView, logout_view, reporte_reembolsos_mensual_pdf, reporte_reembolsos_semanal_pdf, register_user, AseguradoraList
+from .views import LoginView, logout_view, reporte_reembolsos_mensual_pdf, reporte_reembolsos_semanal_pdf, register_user, AseguradoraList, validate_cedula_email, update_password
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -32,6 +17,8 @@ urlpatterns = [
     path('reporte-reembolsos-mensual/', reporte_reembolsos_mensual_pdf, name='reporte_reembolsos_mensual'),
     path('api/register/', register_user, name='register_user'),
     path('api/aseguradoras/', AseguradoraList.as_view(), name='aseguradora-list'),
+    path('api/validate-cedula-email/', validate_cedula_email, name='validate_cedula_email'),
+    path('api/update-password/', update_password, name='update_password'),
 ]
 
 if settings.DEBUG:
