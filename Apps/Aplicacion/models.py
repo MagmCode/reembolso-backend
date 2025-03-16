@@ -229,36 +229,36 @@ class CartaAval(models.Model):
         on_delete=models.PROTECT
     )
     id = models.IntegerField(
-        'Numero de presupuesto',
+        'Numero de factura',
         primary_key=True
-    )
-    fecha_siniestro = models.DateField(
-        'Fecha de siniestro',
-        blank=False,
-        null=False
-    )
-    fecha_registro = models.DateField(
-        'Fecha de registro',
-        blank=False,
-        null=False
     )
     diagnostico = models.CharField(
         'Diagnostico',
         max_length=255,
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
+    )
+    fecha_siniestro = models.DateField(
+        'fecha de siniestro',
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
+    )
+    fecha_factura = models.DateField(
+        'Fecha de factura',
         blank=False,
         null=False
     )
-    procedimiento = models.CharField(
-        'Procedimiento',
+    concepto = models.CharField(
+        'Concepto',
         max_length=255,
         blank=False,
         null=False
     )
-    clinica = models.CharField(
-        'Clinica',
+    paciente = models.CharField(
+        'Paciente',
         max_length=255,
-        blank=False,
-        null=False
+        blank=True,  # Ahora no es requerido
+        null=True    # Ahora puede ser nulo
     )
     monto = models.DecimalField(
         'Costo',
@@ -267,14 +267,9 @@ class CartaAval(models.Model):
         blank=False,
         null=False
     )
-    paciente = models.CharField(
-        'Paciente',
-        max_length=255,
-        blank=False,
-        null=False
-    )
-    informe_resultado = models.ImageField(upload_to='photos/cartaval/')
-    informe_ampliado = models.ImageField(upload_to='photos/cartaval/')
+    cedula_paciente = models.FileField(upload_to='pdfs/reembolso/')  # Cambia ImageField a FileField
+    informe_ampliado = models.FileField(upload_to='pdfs/reembolso/')
+    informe_resultado = models.FileField(upload_to='pdfs/reembolso/')
     
     def __str__(self):
         return f'{self.id}'

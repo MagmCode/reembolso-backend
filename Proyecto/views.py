@@ -19,13 +19,18 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
 from django.contrib.staticfiles import finders
 from reportlab.lib.enums import TA_CENTER
-from Apps.Aplicacion.models import Usuario, Aseguradora, Titular, Reembolso
+from Apps.Aplicacion.models import CartaAval, SolicitudReembolso, Usuario, Aseguradora, Titular, Reembolso, SolicitudCartaAval
 import json
 from django.core.exceptions import ValidationError
 
-from Apps.Aplicacion.serializers import AseguradoraSerializer, ReembolsoSerializer
+from Apps.Aplicacion.serializers import AseguradoraSerializer, CartaAvalSerializer, ReembolsoSerializer
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from datetime import datetime, timedelta
+from django.db.models import Q 
+from dateutil.relativedelta import relativedelta
+
+
 
 
 # VARIABLES GLOBALES
@@ -83,6 +88,8 @@ def logout_view(request):
 
 
 # REPORTES PDF
+
+
 # Reporte de reembolsos semanal
 
 def reporte_reembolsos_semanal_pdf(request):
@@ -91,7 +98,6 @@ def reporte_reembolsos_semanal_pdf(request):
     
     p = canvas.Canvas(response, pagesize=letter)
     
-    # Parámetros para la tabla y el título
     table_x = 50
     col_widths = [73] * 7      # 7 columnas
     table_width = sum(col_widths)
@@ -100,29 +106,35 @@ def reporte_reembolsos_semanal_pdf(request):
     title_text = "REPORTE DE REEMBOLSOS SEMANAL"
     title_bg_color = colors.HexColor('#d8e7fc')
     title_height = 30
-    # Ajusta title_y para que el título aparezca en la posición deseada
-    title_y = 725  # Valor modificado para bajar un poco (anteriormente estaba más arriba)
+    title_y = 725
     
     p.setFillColor(title_bg_color)
     p.rect(table_x, title_y, table_width, title_height, fill=True, stroke=False)
     
-    # --- Dibujar el título centrado en el rectángulo ---
+   # --- Dibujar el título centrado en el rectángulo ---
     title_font = "Helvetica-Bold"
     title_font_size = 16
     p.setFont(title_font, title_font_size)
     p.setFillColor(colors.black)
     text_width = p.stringWidth(title_text, title_font, title_font_size)
     text_x = table_x + (table_width - text_width) / 2
-    # Ajusta text_y para centrar verticalmente el texto en el rectángulo
     text_y = title_y + (title_height - title_font_size) / 2 + 4
     p.drawString(text_x, text_y, title_text)
     
-    # --- Dibujar la tabla de datos ---
+    # --- Consultar la base de datos para obtener los datos ---
+    hoy = datetime.now()
+    semanas = []
+    for i in range(4):  # Últimas 4 semanas
+        inicio_semana = hoy - timedelta(days=hoy.weekday() + 7 * i)
+        fin_semana = inicio_semana + timedelta(days=6)
+        semanas.append((inicio_semana, fin_semana))
+    
+    # --- Preparar la tabla de datos con encabezados centrados ---
     styles = getSampleStyleSheet()
     header_style = styles["Heading5"]
     header_style.fontSize = 8
     header_style.leading = 10
-    header_style.alignment = TA_CENTER  # Encabezados centrados
+    header_style.alignment = TA_CENTER
     
     headers = [
         "Semana", 
@@ -133,14 +145,28 @@ def reporte_reembolsos_semanal_pdf(request):
         "Reembolsos Rechazados", 
         "Reembolsos Pendientes"
     ]
-    # Convertir cada encabezado en un Paragraph para que realice el wrap y se centre
     header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in headers]
     
-    data_rows = [
-        ["15", "2024", "120", "17.14", "105", "10", "5"],
-        ["16", "2024", "130", "18.57", "110", "12", "8"],
-        # Agrega más filas según sea necesario
-    ]
+    # --- Generar las filas de datos desde la base de datos ---
+    data_rows = []
+    for inicio_semana, fin_semana in semanas:
+        reembolsos_semanales = Reembolso.objects.filter(fecha_factura__range=[inicio_semana, fin_semana])
+        total_reembolsos = reembolsos_semanales.count()
+        reembolsos_aprobados = SolicitudReembolso.objects.filter(reembolso__in=reembolsos_semanales, estatus='A').count()
+        reembolsos_rechazados = SolicitudReembolso.objects.filter(reembolso__in=reembolsos_semanales, estatus='R').count()
+        reembolsos_pendientes = SolicitudReembolso.objects.filter(reembolso__in=reembolsos_semanales, estatus='P').count()
+        promedio_por_dia = total_reembolsos / 7 if total_reembolsos > 0 else 0
+        
+        data_rows.append([
+            str(inicio_semana.isocalendar()[1]),  # Número de la semana
+            str(inicio_semana.year),
+            str(total_reembolsos),
+            f"{promedio_por_dia:.2f}",
+            str(reembolsos_aprobados),
+            str(reembolsos_rechazados),
+            str(reembolsos_pendientes),
+        ])
+    
     data = [header_row] + data_rows
     
     table = Table(data, colWidths=col_widths)
@@ -151,22 +177,23 @@ def reporte_reembolsos_semanal_pdf(request):
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#4186F4')),
     ]))
     
-    # Dibujar la tabla (la posición vertical de la tabla se mantiene igual que antes)
+    # Dibujar la tabla
     table.wrapOn(p, table_width, 500)
-    table.drawOn(p, table_x, 600)
+    table.drawOn(p, table_x, 550)
     
-    # --- Dibujar el logo de la empresa (último, para que quede por encima del fondo) ---
+    # --- Dibujar el logo de la empresa ---
     logo_path = finders.find('rest_framework/img/Logo.png')
     if not logo_path or not os.path.exists(logo_path):
         raise Exception(f"No se encontró el logo en la ruta de archivos estáticos: {logo_path}")
     
-    # Dibujar el logo; al dibujarlo después, se garantiza que esté por encima
     p.drawImage(logo_path, 40, 700, width=80, height=80, preserveAspectRatio=True)
     
     p.showPage()
     p.save()
     
     return response
+
+
 
 # Reporte de reembolsos mensual
 
@@ -178,14 +205,14 @@ def reporte_reembolsos_mensual_pdf(request):
     
     # Parámetros para la tabla y el título
     table_x = 50
-    col_widths = [85] * 6      # 6 columnas para el reporte mensual
-    table_width = sum(col_widths)  # ancho total de la tabla (~510 pts)
+    col_widths = [85] * 6  # 6 columnas para el reporte mensual
+    table_width = sum(col_widths)
     
     # --- Dibujar el fondo del título ---
     title_text = "REPORTE DE REEMBOLSOS MENSUAL"
-    title_bg_color = colors.HexColor('#d8e7fc')  # fondo similar al reporte semanal
+    title_bg_color = colors.HexColor('#d8e7fc')
     title_height = 30
-    title_y = 725  # Ajusta este valor para bajar o subir el título
+    title_y = 725
     
     p.setFillColor(title_bg_color)
     p.rect(table_x, title_y, table_width, title_height, fill=True, stroke=False)
@@ -194,21 +221,27 @@ def reporte_reembolsos_mensual_pdf(request):
     title_font = "Helvetica-Bold"
     title_font_size = 16
     p.setFont(title_font, title_font_size)
-    # Para que el título se pinte en negro:
     p.setFillColor(colors.black)
     text_width = p.stringWidth(title_text, title_font, title_font_size)
     text_x = table_x + (table_width - text_width) / 2
     text_y = title_y + (title_height - title_font_size) / 2 + 4
     p.drawString(text_x, text_y, title_text)
     
+    # --- Consultar la base de datos para obtener los datos ---
+    hoy = datetime.now()
+    meses = []
+    for i in range(6):  # Últimos 6 meses
+        inicio_mes = hoy.replace(day=1) - relativedelta(months=i)  # Restar meses usando relativedelta
+        fin_mes = inicio_mes + relativedelta(day=31)  # Último día del mes
+        meses.append((inicio_mes, fin_mes))
+    
     # --- Preparar la tabla de datos con encabezados centrados ---
     styles = getSampleStyleSheet()
     header_style = styles["Heading5"]
     header_style.fontSize = 8
     header_style.leading = 10
-    header_style.alignment = TA_CENTER  # Encabezados centrados
+    header_style.alignment = TA_CENTER
     
-    # Encabezados para el reporte mensual
     headers = [
         "Mes", 
         "Año", 
@@ -219,12 +252,26 @@ def reporte_reembolsos_mensual_pdf(request):
     ]
     header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in headers]
     
-    # Datos de ejemplo para el reporte mensual
-    data_rows = [
-        ["Marzo", "2024", "450", "15", "$50,000", "5 días"],
-        ["Abril", "2024", "475", "15.8", "$52,000", "4 días"],
-        # Agrega más filas según sea necesario
-    ]
+    # --- Generar las filas de datos desde la base de datos ---
+    data_rows = []
+    for inicio_mes, fin_mes in meses:
+        reembolsos_mensuales = Reembolso.objects.filter(fecha_factura__range=[inicio_mes, fin_mes])
+        total_reembolsos = reembolsos_mensuales.count()
+        monto_total_reembolsado = sum(reembolso.monto for reembolso in reembolsos_mensuales)
+        
+        # Calcular el tiempo promedio de procesamiento solo para reembolsos con fecha_siniestro no nula
+        reembolsos_validos = [reembolso for reembolso in reembolsos_mensuales if reembolso.fecha_siniestro is not None]
+        tiempo_total_procesamiento = sum((reembolso.fecha_factura - reembolso.fecha_siniestro).days for reembolso in reembolsos_validos)
+        tiempo_promedio_procesamiento = tiempo_total_procesamiento / len(reembolsos_validos) if len(reembolsos_validos) > 0 else 0
+        
+        data_rows.append([
+            inicio_mes.strftime("%B"),  # Nombre del mes
+            str(inicio_mes.year),
+            str(total_reembolsos),
+            f"{total_reembolsos / 30:.2f}",  # Promedio diario
+            f"${monto_total_reembolsado:,.2f}",
+            f"{tiempo_promedio_procesamiento:.2f} días",
+        ])
     
     data = [header_row] + data_rows
     
@@ -232,21 +279,229 @@ def reporte_reembolsos_mensual_pdf(request):
     table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        # Alternar el fondo de las filas (desde la fila 1 en adelante):
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#DAE7FB'), colors.white]),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#4186F4')),
     ]))
     
     # Dibujar la tabla
     table.wrapOn(p, table_width, 500)
-    table.drawOn(p, table_x, 600)
+    table.drawOn(p, table_x, 525)  # Ajusta la posición vertical de la tabla
     
     # --- Dibujar el logo de la empresa ---
     logo_path = finders.find('rest_framework/img/Logo.png')
     if not logo_path or not os.path.exists(logo_path):
         raise Exception(f"No se encontró el logo en la ruta de archivos estáticos: {logo_path}")
     
-    # Dibujar el logo; al hacerlo al final se asegura que no quede tapado por otros elementos
+    p.drawImage(logo_path, 40, 700, width=80, height=80, preserveAspectRatio=True)
+    
+    p.showPage()
+    p.save()
+    
+    return response
+
+
+
+# REPORTES CARTA AVAL SEMANAL
+
+def reporte_cartas_aval_semanal_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_cartas_aval_semanal.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=letter)
+    
+    # Parámetros para la tabla y el título
+    table_x = 50
+    col_widths = [73] * 7  # 7 columnas
+    table_width = sum(col_widths)
+    
+    # --- Dibujar el fondo del título ---
+    title_text = "REPORTE DE CARTAS AVAL SEMANAL"
+    title_bg_color = colors.HexColor('#d8e7fc')
+    title_height = 30
+    title_y = 725
+    
+    p.setFillColor(title_bg_color)
+    p.rect(table_x, title_y, table_width, title_height, fill=True, stroke=False)
+    
+    # --- Dibujar el título centrado en el rectángulo ---
+    title_font = "Helvetica-Bold"
+    title_font_size = 16
+    p.setFont(title_font, title_font_size)
+    p.setFillColor(colors.black)
+    text_width = p.stringWidth(title_text, title_font, title_font_size)
+    text_x = table_x + (table_width - text_width) / 2
+    text_y = title_y + (title_height - title_font_size) / 2 + 4
+    p.drawString(text_x, text_y, title_text)
+    
+    # --- Consultar la base de datos para obtener los datos ---
+    hoy = datetime.now()
+    semanas = []
+    for i in range(4):  # Últimas 4 semanas
+        inicio_semana = hoy - timedelta(days=hoy.weekday() + 7 * i)
+        fin_semana = inicio_semana + timedelta(days=6)
+        semanas.append((inicio_semana, fin_semana))
+    
+    # --- Preparar la tabla de datos con encabezados centrados ---
+    styles = getSampleStyleSheet()
+    header_style = styles["Heading5"]
+    header_style.fontSize = 8
+    header_style.leading = 10
+    header_style.alignment = TA_CENTER
+    
+    headers = [
+        "Semana", 
+        "Año", 
+        "Total Cartas Aval", 
+        "Promedio por día", 
+        "Cartas Aval Aprobadas", 
+        "Cartas Aval Rechazadas", 
+        "Cartas Aval Pendientes"
+    ]
+    header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in headers]
+    
+    # --- Generar las filas de datos desde la base de datos ---
+    data_rows = []
+    for inicio_semana, fin_semana in semanas:
+        cartas_aval_semanales = CartaAval.objects.filter(fecha_factura__range=[inicio_semana, fin_semana])
+        total_cartas_aval = cartas_aval_semanales.count()
+        cartas_aval_aprobadas = SolicitudCartaAval.objects.filter(carta_aval__in=cartas_aval_semanales, estatus='A').count()
+        cartas_aval_rechazadas = SolicitudCartaAval.objects.filter(carta_aval__in=cartas_aval_semanales, estatus='R').count()
+        cartas_aval_pendientes = SolicitudCartaAval.objects.filter(carta_aval__in=cartas_aval_semanales, estatus='P').count()
+        promedio_por_dia = total_cartas_aval / 7 if total_cartas_aval > 0 else 0
+        
+        data_rows.append([
+            str(inicio_semana.isocalendar()[1]),  # Número de la semana
+            str(inicio_semana.year),
+            str(total_cartas_aval),
+            f"{promedio_por_dia:.2f}",
+            str(cartas_aval_aprobadas),
+            str(cartas_aval_rechazadas),
+            str(cartas_aval_pendientes),
+        ])
+    
+    data = [header_row] + data_rows
+    
+    table = Table(data, colWidths=col_widths)
+    table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#DAE7FB'), colors.white]),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#4186F4')),
+    ]))
+    
+    # Dibujar la tabla
+    table.wrapOn(p, table_width, 500)
+    table.drawOn(p, table_x, 550)
+    
+    # --- Dibujar el logo de la empresa ---
+    logo_path = finders.find('rest_framework/img/Logo.png')
+    if not logo_path or not os.path.exists(logo_path):
+        raise Exception(f"No se encontró el logo en la ruta de archivos estáticos: {logo_path}")
+    
+    p.drawImage(logo_path, 40, 700, width=80, height=80, preserveAspectRatio=True)
+    
+    p.showPage()
+    p.save()
+    
+    return response
+
+# CARTA AVAL MENSUAL
+
+def reporte_cartas_aval_mensual_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_cartas_aval_mensual.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=letter)
+    
+    # Parámetros para la tabla y el título
+    table_x = 50
+    col_widths = [85] * 6  # 6 columnas para el reporte mensual
+    table_width = sum(col_widths)
+    
+    # --- Dibujar el fondo del título ---
+    title_text = "REPORTE DE CARTAS AVAL MENSUAL"
+    title_bg_color = colors.HexColor('#d8e7fc')
+    title_height = 30
+    title_y = 725
+    
+    p.setFillColor(title_bg_color)
+    p.rect(table_x, title_y, table_width, title_height, fill=True, stroke=False)
+    
+    # --- Dibujar el título centrado en el rectángulo ---
+    title_font = "Helvetica-Bold"
+    title_font_size = 16
+    p.setFont(title_font, title_font_size)
+    p.setFillColor(colors.black)
+    text_width = p.stringWidth(title_text, title_font, title_font_size)
+    text_x = table_x + (table_width - text_width) / 2
+    text_y = title_y + (title_height - title_font_size) / 2 + 4
+    p.drawString(text_x, text_y, title_text)
+    
+    # --- Consultar la base de datos para obtener los datos ---
+    hoy = datetime.now()
+    meses = []
+    for i in range(6):  # Últimos 6 meses
+        inicio_mes = hoy.replace(day=1) - relativedelta(months=i)  # Restar meses usando relativedelta
+        fin_mes = inicio_mes + relativedelta(day=31)  # Último día del mes
+        meses.append((inicio_mes, fin_mes))
+    
+    # --- Preparar la tabla de datos con encabezados centrados ---
+    styles = getSampleStyleSheet()
+    header_style = styles["Heading5"]
+    header_style.fontSize = 8
+    header_style.leading = 10
+    header_style.alignment = TA_CENTER
+    
+    headers = [
+        "Mes", 
+        "Año", 
+        "Total Cartas Aval", 
+        "Promedio Mensual", 
+        "Monto Total Avalado", 
+        "Tiempo Promedio de Procesamiento"
+    ]
+    header_row = [Paragraph(f"<b>{h}</b>", header_style) for h in headers]
+    
+    # --- Generar las filas de datos desde la base de datos ---
+    data_rows = []
+    for inicio_mes, fin_mes in meses:
+        cartas_aval_mensuales = CartaAval.objects.filter(fecha_factura__range=[inicio_mes, fin_mes])
+        total_cartas_aval = cartas_aval_mensuales.count()
+        monto_total_avalado = sum(carta_aval.monto for carta_aval in cartas_aval_mensuales)
+        
+        # Calcular el tiempo promedio de procesamiento solo para cartas aval con fecha_siniestro no nula
+        cartas_aval_validas = [carta_aval for carta_aval in cartas_aval_mensuales if carta_aval.fecha_siniestro is not None]
+        tiempo_total_procesamiento = sum((carta_aval.fecha_factura - carta_aval.fecha_siniestro).days for carta_aval in cartas_aval_validas)
+        tiempo_promedio_procesamiento = tiempo_total_procesamiento / len(cartas_aval_validas) if len(cartas_aval_validas) > 0 else 0
+        
+        data_rows.append([
+            inicio_mes.strftime("%B"),  # Nombre del mes
+            str(inicio_mes.year),
+            str(total_cartas_aval),
+            f"{total_cartas_aval / 30:.2f}",  # Promedio diario
+            f"${monto_total_avalado:,.2f}",
+            f"{tiempo_promedio_procesamiento:.2f} días",
+        ])
+    
+    data = [header_row] + data_rows
+    
+    table = Table(data, colWidths=col_widths)
+    table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#DAE7FB'), colors.white]),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#4186F4')),
+    ]))
+    
+    # Dibujar la tabla
+    table.wrapOn(p, table_width, 500)
+    table.drawOn(p, table_x, 525)  # Ajusta la posición vertical de la tabla
+    
+    # --- Dibujar el logo de la empresa ---
+    logo_path = finders.find('rest_framework/img/Logo.png')
+    if not logo_path or not os.path.exists(logo_path):
+        raise Exception(f"No se encontró el logo en la ruta de archivos estáticos: {logo_path}")
+    
     p.drawImage(logo_path, 40, 700, width=80, height=80, preserveAspectRatio=True)
     
     p.showPage()
@@ -448,3 +703,18 @@ class ReembolsoListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Asignar el usuario actual al reembolso creado
         serializer.save(username=self.request.user)
+        
+        
+# CARTA AVAL CLIENTE
+class CartaAvalListCreateView(generics.ListCreateAPIView):
+    serializer_class = CartaAvalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filtrar las cartas aval del usuario actual.
+        return CartaAval.objects.filter(username=self.request.user)
+
+    def perform_create(self, serializer):
+        # Asignar automáticamente el usuario actual a la carta aval creada.
+        serializer.save(username=self.request.user)
+        
