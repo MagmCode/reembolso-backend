@@ -161,7 +161,6 @@ class Administrador(models.Model):
 
     def __str__(self):
         return f'{self.username}'
-
 class Reembolso(models.Model):
     aseguradora = models.ForeignKey(
         Aseguradora,
@@ -172,19 +171,19 @@ class Reembolso(models.Model):
         on_delete=models.PROTECT
     )
     id = models.IntegerField(
-        'Numero de factura',
+        'Número de factura',
         primary_key=True
     )
     diagnostico = models.CharField(
-        'Diagnostico',
+        'Diagnóstico',
         max_length=255,
-        blank=True,  # Ahora no es requerido
-        null=True    # Ahora puede ser nulo
+        blank=True,
+        null=True
     )
     fecha_siniestro = models.DateField(
-        'fecha de siniestro',
-        blank=True,  # Ahora no es requerido
-        null=True    # Ahora puede ser nulo
+        'Fecha de siniestro',
+        blank=True,
+        null=True
     )
     fecha_factura = models.DateField(
         'Fecha de factura',
@@ -200,23 +199,37 @@ class Reembolso(models.Model):
     paciente = models.CharField(
         'Paciente',
         max_length=255,
-        blank=True,  # Ahora no es requerido
-        null=True    # Ahora puede ser nulo
+        blank=True,
+        null=True
     )
     monto = models.DecimalField(
-        'Costo',
+        'Monto',
         max_digits=10,
         decimal_places=2,
         blank=False,
         null=False
     )
-    cedula_paciente = models.FileField(upload_to='pdfs/reembolso/')  # Cambia ImageField a FileField
+    nroControl = models.CharField(
+        'Nro de control',
+        max_length=50,
+    )
+    ESTADOS = [
+        ('PENDIENTE', 'Pendiente'),
+        ('APROBADO', 'Aprobado'),
+        ('RECHAZADO', 'Rechazado'),
+    ]
+    
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default='PENDIENTE'
+    )
+    cedula_paciente = models.FileField(upload_to='pdfs/reembolso/')
     informe_ampliado = models.FileField(upload_to='pdfs/reembolso/')
     informe_resultado = models.FileField(upload_to='pdfs/reembolso/')
     
     def __str__(self):
         return f'{self.id}'
-
 
 
 class CartaAval(models.Model):

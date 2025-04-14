@@ -697,12 +697,17 @@ class ReembolsoListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Filtrar los reembolsos por el usuario actual
         return Reembolso.objects.filter(username=self.request.user)
 
     def perform_create(self, serializer):
-        # Asignar el usuario actual al reembolso creado
-        serializer.save(username=self.request.user)
+        # Obtener la aseguradora del titular automáticamente
+        titular = Titular.objects.get(username=self.request.user)
+        
+        serializer.save(
+            username=self.request.user,
+            aseguradora=titular.aseguradora,
+            estado='En revisión'  # Valor por defecto
+        )
         
         
 # CARTA AVAL CLIENTE
