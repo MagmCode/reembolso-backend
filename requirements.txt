@@ -9,3 +9,4 @@ gunicorn==21.2.0
 setuptools==75.8.0
 dj-database-url
 reportlab==4.1.0
+python-dateutil==2.9.0
